@@ -1,0 +1,61 @@
+> restart;
+> with(LinearAlgebra);
+> with(plots);
+> N := 20;
+> h := 1/N;
+> tau := 0.001;
+> M := floor(1/tau);
+> x := i -> i*h;
+> y := j -> j*h;
+> t := n -> n*tau;
+> w1 := (x, y, t) -> erf(1/2*x/sqrt(t))*erf(1/2*y/sqrt(t));
+> W := Array(0 .. N, 0 .. N, 0 .. M);
+> W_star := Array(0 .. N, 0 .. N);
+> W_x := Array(0 .. N, 0 .. N);
+> for i from 0 to N do
+>     for j from 0 to N do W[i, j, 0] := 1; end do;
+> end do;
+> applyBoundary := proc(Wmat, n::integer) local i, j; for i from 0 to N do Wmat[i, 0] := w1(x(i), y(0), t(n)); Wmat[i, N] := w1(x(i), y(N), t(n)); end do; for j from 0 to N do Wmat[0, j] := w1(x(0), y(j), t(n)); Wmat[N, j] := w1(x(N), y(j), t(n)); end do; end proc;
+> for n from 0 to M - 1 do
+>     for j to N - 1 do A := Matrix(N - 1, N - 1, 0); A[1, 1] := -1 - tau/h^2; A[1, 2] := tau/(2*h^2); for k from 2 to N - 2 do A[k, k - 1] := tau/(2*h^2); A[k, k + 1] := tau/(2*h^2); A[k, k] := -1 - tau/h^2; end do; A[N - 1, N - 1] := -1 - tau/h^2; A[N - 1, N - 2] := tau/(2*h^2); b := Vector(N - 1); for i to N - 1 do b[i] := -W[i, j, n] - tau/(2*h^2)*(W[i, j + 1, n] - 2*W[i, j, n] + W[i, j - 1, n]); end do; w_star := LinearSolve(A, b); for i to N - 1 do W_star[i, j] := w_star[i]; end do; end do;
+>     applyBoundary(W_star, n + 1);
+>     for i to N - 1 do
+>         A := Matrix(N - 1, N - 1, 0);
+>         A[1, 1] := -1 - tau/h^2;
+>         A[1, 2] := tau/(2*h^2);
+>         for k from 2 to N - 2 do
+>             A[k, k - 1] := tau/(2*h^2);
+>             A[k, k + 1] := tau/(2*h^2);
+>             A[k, k] := -1 - tau/h^2;
+>         end do;
+>         A[N - 1, N - 1] := -1 - tau/h^2;
+>         A[N - 1, N - 2] := tau/(2*h^2);
+>         b := Vector(N - 1);
+>         for j to N - 1 do
+>             b[j] := -W_star[i, j] - tau/(2*h^2)*(W_star[i + 1, j] - 2*W_star[i, j] + W_star[i - 1, j]);
+>         end do;
+>         w_next := LinearSolve(A, b);
+>         for j to N - 1 do
+>             W_x[i, j] := w_next[j];
+>         end do;
+>     end do;
+>     applyBoundary(W_x, n + 1);
+>     for i from 0 to N do
+>         for j from 0 to N do W[i, j, n + 1] := W_x[i, j]; end do;
+>     end do;
+> end do;
+> NULL;
+> M500 := Matrix(N + 1, N + 1, (i, j) -> W[i - 1, j - 1, 250]);
+> M1000 := Matrix(N + 1, N + 1, (i, j) -> W[i - 1, j - 1, 500]);
+> M1500 := Matrix(N + 1, N + 1, (i, j) -> W[i - 1, j - 1, 750]);
+> M2000 := Matrix(N + 1, N + 1, (i, j) -> W[i - 1, j - 1, 1000]);
+> plots:-matrixplot(M500, axes = box);
+> M1000;
+
+> plots:-matrixplot(M1000, axes = box);
+
+> plots:-matrixplot(M1500, axes = box);
+
+> plots:-matrixplot(M2000, axes = box);
+
+> NULL;
